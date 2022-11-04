@@ -5,6 +5,7 @@ import com.cydeo.enums.Status;
 import com.cydeo.enums.service.ProjectService;
 import com.cydeo.enums.service.TaskService;
 import com.cydeo.enums.service.UserService;
+import lombok.var;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -144,6 +145,7 @@ public class TaskController {
         taskService.updateStatus(task);
 
         return "redirect:/task/employee/pending-tasks";
+        
 
     }
 
