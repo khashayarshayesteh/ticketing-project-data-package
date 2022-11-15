@@ -24,7 +24,6 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectMapper projectMapper;
     private final UserService userService;
     private final UserMapper userMapper;
-
     private final TaskService taskService;
 
     public ProjectServiceImpl(ProjectRepository projectRepository, ProjectMapper projectMapper, UserService userService, UserMapper userMapper, TaskService taskService) {
@@ -34,7 +33,6 @@ public class ProjectServiceImpl implements ProjectService {
         this.userMapper = userMapper;
         this.taskService = taskService;
     }
-
 
     @Override
     public ProjectDTO getByProjectCode(String code) {
@@ -76,43 +74,53 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public void delete(String code) {
-
         Project project = projectRepository.findByProjectCode(code);
         project.setIsDeleted(true);
 
-        project.setProjectCode(project.getProjectCode() + "-" + project.getId());
+        project.setProjectCode(project.getProjectCode() + "-" + project.getId());  // SP03-4
 
         projectRepository.save(project);
 
         taskService.deleteByProject(projectMapper.convertToDto(project));
+
     }
 
     @Override
     public void complete(String projectCode) {
-
         Project project = projectRepository.findByProjectCode(projectCode);
         project.setProjectStatus(Status.COMPLETE);
         projectRepository.save(project);
 
-
+        taskService.completeByProject(projectMapper.convertToDto(project));
     }
 
     @Override
     public List<ProjectDTO> listAllProjectDetails() {
 
-        UserDTO currentUserDto = userService.findByUserName(("harold@manager.com"));
-        User user = userMapper.convertToEntity(currentUserDto);
+        UserDTO currentUserDTO = userService.findByUserName("harold@manager.com");
+        User user = userMapper.convertToEntity(currentUserDTO);
 
         List<Project> list = projectRepository.findAllByAssignedManager(user);
 
 
         return list.stream().map(project -> {
-            ProjectDTO obj = projectMapper.convertToDto(project);
 
-            obj.setUnfinishedTaskCounts(taskService.totalNonCompletedTask(project.getProjectCode()));
-            obj.setCompleteTaskCounts(taskService.totalCompletedTask(project.getProjectCode()));
-            return obj;
+                    ProjectDTO obj = projectMapper.convertToDto(project);
 
-        }).collect(Collectors.toList());
+                    obj.setUnfinishedTaskCounts(taskService.totalNonCompletedTask(project.getProjectCode()));
+                    obj.setCompleteTaskCounts(taskService.totalCompletedTask(project.getProjectCode()));
+
+                    return obj;
+                }
+
+        ).collect(Collectors.toList());
     }
+
+    @Override
+    public List<ProjectDTO> listAllNonCompletedByAssignedManager(UserDTO assignedManager) {
+        List<Project> projects = projectRepository
+                .findAllByProjectStatusIsNotAndAssignedManager(Status.COMPLETE, userMapper.convertToEntity(assignedManager));
+        return projects.stream().map(projectMapper::convertToDto).collect(Collectors.toList());
+    }
+
 }
